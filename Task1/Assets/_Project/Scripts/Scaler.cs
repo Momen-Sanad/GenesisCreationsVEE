@@ -8,66 +8,76 @@ public class Scaler : MonoBehaviour
     public Transform Moon;
 
     private Transform selectedObject = null;
-
     private Vector3 lastMousePosition;
     private bool isDragging = false;
 
-    void Update()
-    {
-        // Check if user is pressing down
-        if (Input.GetMouseButtonDown(0))
-        {
-            // Check if user is pressing on a viable object (sun/moon/earth)
-            if (TryGetClickedObject(out selectedObject))
-            {
-                /// This will allow calling of ScaleCelestialBody(Transform, float)
-                isDragging = true;  
+
+
+    void Update() => HandleObjectScaling();
+
+    /// <summary>
+    /// Handles the logic for selecting and scaling celestial bodies
+    /// based on mouse input.
+    /// </summary>
+    private void HandleObjectScaling() {
+
+        // Mouse pressed down — check if clicked on a valid object
+        if (Input.GetMouseButtonDown(0)) {
+            if (TryGetClickedObject(out selectedObject)) {
+
+                isDragging = true;
                 lastMousePosition = Input.mousePosition;
             }
         }
 
+        // While holding the mouse button, apply scaling
         if (Input.GetMouseButton(0) && isDragging && selectedObject != null)
-        {
-            // Equation to calculate how much to scale based on the click position and current position
-            Vector3 delta = Input.mousePosition - lastMousePosition;
-            
-            float scaleFactor = 1 + delta.y * 0.005f; // Sensitivity adjustment
-            scaleFactor = Mathf.Clamp(scaleFactor, 0.5f, 2.0f);
+            ApplyScalingFromMouseMovement();
+        
 
-            // Call the function to scale using the calculated factor
-            ScaleCelestialBody(selectedObject, scaleFactor);
+        // Mouse released —> stop scaling
+        if (Input.GetMouseButtonUp(0)) {
 
-            lastMousePosition = Input.mousePosition;
-        }
-
-        // User stopped holding left click
-        if (Input.GetMouseButtonUp(0))
-        {
             isDragging = false;
             selectedObject = null;
         }
     }
 
     /// <summary>
+    /// Applies scaling to the currently selected object
+    /// based on the vertical movement of the mouse.
+    /// </summary>
+    private void ApplyScalingFromMouseMovement() {
+
+        Vector3 delta = Input.mousePosition - lastMousePosition;
+
+        // Calculate scaling factor with sensitivity adjustment
+        float scaleFactor = 1 + delta.y * 0.005f;
+        scaleFactor = Mathf.Clamp(scaleFactor, 0.5f, 2.0f);
+
+        // Apply scaling
+        ScaleCelestialBody(selectedObject, scaleFactor);
+
+        // Update for the next frame
+        lastMousePosition = Input.mousePosition;
+    }
+
+
+    /// <summary>
     /// Casts a ray from the camera to check if the user clicked one of the celestial bodies.
     /// </summary>
-    /// <param name="clickedObject">The object clicked, if any.</param>
-    /// <returns>True if a valid celestial body was clicked.</returns>
-    private bool TryGetClickedObject(out Transform clickedObject)
-    {
+    bool TryGetClickedObject(out Transform clickedObject) {
         clickedObject = null;
 
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        RaycastHit hit;
+        var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 
-        if (Physics.Raycast(ray, out hit))
-        {
-            Transform obj = hit.transform;
-            string tag = obj.tag;
-            
-            if (tag == "Sun" || tag == "Earth" || tag == "Moon")
-            {
-                clickedObject = obj;
+        if (Physics.Raycast(ray, out RaycastHit hit)) {
+
+            var tag = hit.transform.tag;
+
+            if (tag == "Sun" || tag == "Earth" || tag == "Moon") {
+
+                clickedObject = hit.transform;
                 return true;
             }
         }
@@ -75,8 +85,16 @@ public class Scaler : MonoBehaviour
     }
 
     /// <summary>
-    /// Scales the selected object.
+    /// Scales the selected object by multiplying its local scale,
+    /// and clamps the Y scale to stay within defined limits.
     /// </summary>
-    private void ScaleCelestialBody(Transform clicked, float scaleFactor) => clicked.localScale *= scaleFactor;
-    
+    private void ScaleCelestialBody(Transform clicked, float scaleFactor)
+    {
+        var scale = clicked.localScale * scaleFactor;
+
+        // Clamping
+        scale.y = Mathf.Clamp(scale.y, 0.1f, Mathf.Max(scale.x, scale.z));
+
+        clicked.localScale = scale;
+    }
 }
