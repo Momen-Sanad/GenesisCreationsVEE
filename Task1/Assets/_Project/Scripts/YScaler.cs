@@ -60,7 +60,7 @@ public class YScaler : MonoBehaviour {
             Transform obj = hit.transform;
             var tag = obj.tag;
 
-            if (tag == "Sun" || tag == "Earth" || tag == "Moon")
+            if (tag == "Sun" || tag == "Earth" || tag == "Moon" || tag == "CelestialBody")
             {
                 clickedObject = obj;
                 return true;

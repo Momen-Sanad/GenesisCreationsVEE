@@ -7,6 +7,8 @@ TagManager:
   - Sun
   - Moon
   - Earth
+  - CelestialBody
+  - Placed
   layers:
   - Default
   - TransparentFX

@@ -52,7 +52,7 @@ public class Scaler : MonoBehaviour
         Vector3 delta = Input.mousePosition - lastMousePosition;
 
         // Calculate scaling factor with sensitivity adjustment
-        float scaleFactor = 1 + delta.y * 0.005f;
+        var scaleFactor = 1 + delta.y * 0.005f;
         scaleFactor = Mathf.Clamp(scaleFactor, 0.5f, 2.0f);
 
         // Apply scaling
@@ -75,7 +75,7 @@ public class Scaler : MonoBehaviour
 
             var tag = hit.transform.tag;
 
-            if (tag == "Sun" || tag == "Earth" || tag == "Moon") {
+            if (tag == "Sun" || tag == "Earth" || tag == "Moon" || tag == "CelestialBody") {
 
                 clickedObject = hit.transform;
                 return true;
