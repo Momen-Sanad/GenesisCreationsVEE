@@ -1,21 +1,29 @@
+using Unity.VisualScripting;
 using UnityEngine;
 
 [RequireComponent(typeof(LineRenderer))]
 public class ObjectPickup : MonoBehaviour
 {
+    [Header("Quiz Settings")]
+    public QuizActivator quizManager;
+    int placedPlanetsCount = 0;
+
     public float maxReach = 4f;
     public float holdDistance = 2f;
     public float moveSpeed = 10f;
 
-    private Camera localCamera;
-    private Rigidbody heldObject;
-    private LineRenderer line;
+    Camera localCamera;
+    Rigidbody heldObject;
+    LineRenderer line;
+
+    public PlanetToolTips tips;
 
     public static bool isHoveringObject = false; // For camera control
 
     void Start()
     {
         localCamera = Camera.main;
+        //quizManager.GetComponent<QuizManager>();
         SetupLineRenderer();
     }
 
@@ -55,6 +63,9 @@ public class ObjectPickup : MonoBehaviour
     /// </summary>
     void DrawLaser()
     {
+        //Debug.Log("DrawLaser");
+        //if (localCamera)
+        //    Debug.Log("CameraFOund");
         var offsetOrigin = localCamera.transform.position + Vector3.down * 0.2f;
         var ray = new Ray(offsetOrigin, localCamera.transform.forward);
         line.SetPosition(0, ray.origin);
@@ -100,6 +111,7 @@ public class ObjectPickup : MonoBehaviour
                 heldObject = rb;
                 heldObject.linearVelocity = Vector3.zero;
                 heldObject.angularVelocity = Vector3.zero;
+                tips.ShowTooltipFor(hit.collider.gameObject);
             }
         }
     }
@@ -124,6 +136,19 @@ public class ObjectPickup : MonoBehaviour
         var placement = heldObject.GetComponent<PlanetPlacement>();
         if (placement != null && placement.TrySnapToTarget(FindFirstObjectByType<OrbitManager>()))
         {
+            placedPlanetsCount++;
+            Debug.Log("i got placed" + placedPlanetsCount);
+            if (placedPlanetsCount == 8)
+            {
+                Debug.Log("Canvas shown");
+                //if (quizManager)
+                quizManager.GetComponent<QuizActivator>().StartQuiz();
+                //quizUIController.StartQuiz();
+                //quizManager = quizManager.GetComponent<QuizManager>;
+                //Cursor.lockState = CursorLockMode.None;
+                //Cursor.visible = true;
+            }
+
             heldObject = null;
             return;
         }

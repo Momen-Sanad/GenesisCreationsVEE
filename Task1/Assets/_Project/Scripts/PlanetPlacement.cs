@@ -5,10 +5,12 @@ public class PlanetPlacement : MonoBehaviour
 {
     public int orbitIndex = -1; // Assigned in inspector: which orbit this planet belongs to
     public float placementThreshold = 0.5f; // Margain of error
-    public bool placed = false; 
+    public bool placed = false;
 
     [Header("Orbit settings (assigned at placement)")]
     public float orbitRadius;
+    
+    [HideInInspector]
     public Transform sun;
     public float orbitAngularSpeed = 0.5f;
 

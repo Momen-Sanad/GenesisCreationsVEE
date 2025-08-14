@@ -9,6 +9,8 @@ public class PlanetOrbit : MonoBehaviour
 
     public void Initialize(Transform sunTransform, float r, float speed)
     {
+        Debug.Log($"Initializing {gameObject.name} orbit with radius {radius}");
+
         sun = sunTransform;
         radius = r;
         angularSpeed = speed;

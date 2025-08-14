@@ -23,7 +23,7 @@ public class OrbitManager : MonoBehaviour
     public void BuildOrbits()
     {
         // Checks whether orbit setup data is valid.
-        if (sun != null && orbitRadii != null && orbitRadii.Length > 0) return;
+        if (sun == null || orbitRadii == null || orbitRadii.Length == 0) return;
 
         PrepareOrbitData();
         ClearExistingChildren();
@@ -142,8 +142,8 @@ public class OrbitManager : MonoBehaviour
     /// </summary>
     void CreateMarker(int index, float radius)
     {
-        var randAngle = Random.Range(0f, Mathf.PI * 2f);
-        var markerPos = sun.position + new Vector3(Mathf.Cos(randAngle), 0f, Mathf.Sin(randAngle)) * radius;
+        var fixedAngle = 200;
+        var markerPos = sun.position + new Vector3(Mathf.Cos(fixedAngle), 0f, Mathf.Sin(fixedAngle)) * radius;
         targetWorldPositions[index] = markerPos;
 
         var prefab = SelectMarkerPrefab(index);
@@ -151,7 +151,7 @@ public class OrbitManager : MonoBehaviour
 
         if (prefab != null)
             markerGO = Instantiate(prefab, markerPos, Quaternion.identity, transform);
-        
+
         else
             markerGO = CreateFallbackMarker(markerPos);
 
