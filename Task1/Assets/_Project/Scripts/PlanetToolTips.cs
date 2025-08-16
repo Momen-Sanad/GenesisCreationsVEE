@@ -1,75 +1,72 @@
 using UnityEngine;
 using TMPro;
 
-// billboarding, scriptableobjects, tips on the planets, make quiz manager using scriptable object.
-[System.Serializable]
-public class PlanetTooltip
-{
-    public GameObject planet;       // The planet in the scene
-    public GameObject tooltipUI;    // The Tooltip UI GameObject (with TextMeshProUGUI inside)
-    public Vector3 offset = new Vector3(2, 2f, 0); // Offset above the planet
-}
-
+[RequireComponent(typeof(Canvas))]
 public class PlanetToolTips : MonoBehaviour
 {
-    public PlanetTooltip[] planetTooltips; // Array for all planets and tooltips
-    private Camera mainCam;
+    [Tooltip("World-space offset from the planet's world position")]
+    public Vector3 offset = new Vector3(0f, 0.5f, 0f);
+
+    public TextMeshProUGUI tmpText;
+
+    // Saved once so the canvas keeps its initial world rotation
+    public Quaternion initialRotation;
 
     void Start()
     {
-        mainCam = Camera.main;
-        HideAllTooltips();
+        // ensure canvas is world-space
+        var canvas = GetComponent<Canvas>();
+        if (canvas != null)
+            canvas.renderMode = RenderMode.WorldSpace;
 
-        // Make sure tooltips are in world space
-        foreach (var pt in planetTooltips)
-        {
-            Canvas canvas = pt.tooltipUI.GetComponentInParent<Canvas>();
-            if (canvas != null)
-                canvas.renderMode = RenderMode.WorldSpace;
-        }
+        if (tmpText == null)
+            tmpText = GetComponentInChildren<TextMeshProUGUI>(true);
+
+        // capture initial world rotation so canvas doesn't spin with the planet
+        initialRotation = transform.rotation;
+
+        gameObject.SetActive(false);
     }
 
+
+    /// <summary>
+    /// Find parent planet, update position to follow planet + offset 
+    /// then lock the canvas rotation to the initial world rotation.
+    /// </summary>
     void LateUpdate()
     {
-        // Keep active tooltips positioned & billboarded
-        foreach (var pt in planetTooltips)
-        {
-            if (pt.tooltipUI.activeSelf)
-            {
-                // Position tooltip above planet
-                pt.tooltipUI.transform.position = pt.planet.transform.position + pt.offset;
+        Transform planet = transform.parent;
+        if (planet == null) return;
 
-                // Billboard: face camera
-                pt.tooltipUI.transform.LookAt(
-                    pt.tooltipUI.transform.position + mainCam.transform.forward,
-                    mainCam.transform.up
-                );
-            }
+        transform.position = planet.position + offset;
+
+        transform.rotation = initialRotation;
+
+        // billboard TMP child to face camera (only when active)
+        if (tmpText != null && tmpText.gameObject.activeInHierarchy)
+        {
+            Camera camera = Camera.main;
+            
+            if (camera == null) 
+                return;
+            
+            Vector3 Direction = tmpText.transform.position - camera.transform.position;
+
+            if (Direction.sqrMagnitude > 0.000001f)
+               tmpText.transform.rotation = Quaternion.LookRotation(Direction, camera.transform.up);
         }
     }
 
-    public void ShowTooltipFor(GameObject planet)
+
+    // Find the PlanetToolTips on the planet's children at call time + sanity checks
+    public static void Show(GameObject planet)
     {
-        Debug.Log(planet + " About to show");
-
-        //HideAllTooltips();
-
-        foreach (var pt in planetTooltips)
-        {
-            if (pt.planet == planet)
-            {
-                Debug.Log(planet + " Shown");
-                pt.tooltipUI.SetActive(true);
-                break;
-            }
-        }
+        if (planet == null) return;
+        var tooltip = planet.GetComponentInChildren<PlanetToolTips>(true);
+        if (tooltip != null) tooltip.Show();
     }
 
-    void HideAllTooltips()
-    {
-        foreach (var pt in planetTooltips)
-        {
-            pt.tooltipUI.SetActive(false);
-        }
-    }
+    // instance helper
+    // this enables: Show(myPlanet);   // no "tips." prefix needed
+    public void Show() => gameObject.SetActive(true);
 }

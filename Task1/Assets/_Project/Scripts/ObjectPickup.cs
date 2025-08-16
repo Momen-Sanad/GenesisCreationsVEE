@@ -16,8 +16,6 @@ public class ObjectPickup : MonoBehaviour
     Rigidbody heldObject;
     LineRenderer line;
 
-    public PlanetToolTips tips;
-
     public static bool isHoveringObject = false; // For camera control
 
     void Start()
@@ -111,7 +109,7 @@ public class ObjectPickup : MonoBehaviour
                 heldObject = rb;
                 heldObject.linearVelocity = Vector3.zero;
                 heldObject.angularVelocity = Vector3.zero;
-                tips.ShowTooltipFor(hit.collider.gameObject);
+                PlanetToolTips.Show(hit.collider.gameObject);
             }
         }
     }
@@ -138,11 +136,12 @@ public class ObjectPickup : MonoBehaviour
         {
             placedPlanetsCount++;
             Debug.Log("i got placed" + placedPlanetsCount);
-            if (placedPlanetsCount == 8)
+            if (placedPlanetsCount == 1)
             {
                 Debug.Log("Canvas shown");
                 //if (quizManager)
-                quizManager.GetComponent<QuizActivator>().StartQuiz();
+                //quizManager.GetComponent<QuizActivator>().StartQuiz();
+                quizManager.StartQuiz();
                 //quizUIController.StartQuiz();
                 //quizManager = quizManager.GetComponent<QuizManager>;
                 //Cursor.lockState = CursorLockMode.None;
