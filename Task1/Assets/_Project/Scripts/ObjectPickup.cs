@@ -136,7 +136,7 @@ public class ObjectPickup : MonoBehaviour
         {
             placedPlanetsCount++;
             Debug.Log("i got placed" + placedPlanetsCount);
-            if (placedPlanetsCount == 1)
+            if (placedPlanetsCount == 8)
             {
                 Debug.Log("Canvas shown");
                 //if (quizManager)
