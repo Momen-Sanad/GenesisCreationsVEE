@@ -115,7 +115,10 @@ public class QuizActivator : MonoBehaviour
             if (quizMode == QuizMode.PlayAll)
                 StartCoroutine(NextQuestionDelay());
             else
+            {
                 Debug.Log("Correct! Single-question mode ends here.");
+                // Start transition
+            }
         }
         else
         {
@@ -144,7 +147,9 @@ public class QuizActivator : MonoBehaviour
             else
             {
                 Debug.Log("Quiz Finished!");
-                if (quizCanvas) quizCanvas.SetActive(false);
+                if (quizCanvas) 
+                   quizCanvas.SetActive(false);
+                // Start transition
             }
         }
     }

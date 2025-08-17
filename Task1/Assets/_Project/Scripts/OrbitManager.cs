@@ -22,6 +22,7 @@ public class OrbitManager : MonoBehaviour
     [ContextMenu("Rebuild Orbits")]
     public void BuildOrbits()
     {
+        Debug.Log("Hello");
         // Checks whether orbit setup data is valid.
         if (sun == null || orbitRadii == null || orbitRadii.Length == 0) return;
 
@@ -78,12 +79,25 @@ public class OrbitManager : MonoBehaviour
     /// <summary>
     /// Removes old orbit and marker objects.
     /// </summary>
-    void ClearExistingChildren()
+    public void ClearExistingChildren()
     {
         for (var i = transform.childCount - 1; i >= 0; i--)
         {
             var child = transform.GetChild(i);
             if (child.name.StartsWith("Orbit_") || child.name.StartsWith("Marker_"))
+                DestroyImmediate(child.gameObject);
+        }
+    }
+
+    /// <summary>
+    /// Removes old marker objects.
+    /// </summary>
+    public void ClearExistingMarker()
+    {
+        for (var i = transform.childCount - 1; i >= 0; i--)
+        {
+            var child = transform.GetChild(i);
+            if (child.name.StartsWith("Marker_"))
                 DestroyImmediate(child.gameObject);
         }
     }

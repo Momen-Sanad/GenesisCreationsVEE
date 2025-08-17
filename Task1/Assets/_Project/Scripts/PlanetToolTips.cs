@@ -59,6 +59,16 @@ public class PlanetToolTips : MonoBehaviour
 
 
     // Find the PlanetToolTips on the planet's children at call time + sanity checks
+    
+    /// <summary>
+    /// Static helper to hide a tooltip from a planet GameObject.
+    /// </summary>
+    public static void Hide(GameObject planet)
+    {
+        if (planet == null) return;
+        var tooltip = planet.GetComponentInChildren<PlanetToolTips>(true);
+        if (tooltip != null) tooltip.Hide();
+    }
     public static void Show(GameObject planet)
     {
         if (planet == null) return;
@@ -66,7 +76,10 @@ public class PlanetToolTips : MonoBehaviour
         if (tooltip != null) tooltip.Show();
     }
 
-    // instance helper
+    // instance helpers
     // this enables: Show(myPlanet);   // no "tips." prefix needed
     public void Show() => gameObject.SetActive(true);
+
+    public void Hide() => gameObject.SetActive(false);
+
 }

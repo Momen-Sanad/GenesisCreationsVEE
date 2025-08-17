@@ -1,5 +1,8 @@
 using Unity.VisualScripting;
 using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
 
 [RequireComponent(typeof(LineRenderer))]
 public class ObjectPickup : MonoBehaviour
@@ -15,6 +18,12 @@ public class ObjectPickup : MonoBehaviour
     Camera localCamera;
     Rigidbody heldObject;
     LineRenderer line;
+    [SerializeField]
+    OrbitManager orbitManager;
+
+    public TransitionSystem transitionSystem;
+
+    private List<GameObject> interactedPlanets = new List<GameObject>();
 
     public static bool isHoveringObject = false; // For camera control
 
@@ -104,12 +113,19 @@ public class ObjectPickup : MonoBehaviour
             if (rb != null && rb.useGravity && !rb.isKinematic)
             {
                 var placement = rb.GetComponent<PlanetPlacement>();
-                if (placement != null && placement.placed) return;
+                if (placement != null && placement.placed) 
+                   return;
 
                 heldObject = rb;
                 heldObject.linearVelocity = Vector3.zero;
                 heldObject.angularVelocity = Vector3.zero;
+
+                // show tooltip
                 PlanetToolTips.Show(hit.collider.gameObject);
+
+                // record unique interacted planet
+                if (!interactedPlanets.Contains(hit.collider.gameObject))
+                    interactedPlanets.Add(hit.collider.gameObject);
             }
         }
     }
@@ -135,17 +151,10 @@ public class ObjectPickup : MonoBehaviour
         if (placement != null && placement.TrySnapToTarget(FindFirstObjectByType<OrbitManager>()))
         {
             placedPlanetsCount++;
-            Debug.Log("i got placed" + placedPlanetsCount);
+            Debug.Log("i got placed " + placedPlanetsCount);
             if (placedPlanetsCount == 8)
             {
-                Debug.Log("Canvas shown");
-                //if (quizManager)
-                //quizManager.GetComponent<QuizActivator>().StartQuiz();
-                quizManager.StartQuiz();
-                //quizUIController.StartQuiz();
-                //quizManager = quizManager.GetComponent<QuizManager>;
-                //Cursor.lockState = CursorLockMode.None;
-                //Cursor.visible = true;
+                HandleFinish();
             }
 
             heldObject = null;
@@ -154,4 +163,48 @@ public class ObjectPickup : MonoBehaviour
 
         heldObject = null;
     }
+
+    public void ClearPlanetTooltips()
+    {
+        if (interactedPlanets == null || interactedPlanets.Count == 0) return;
+
+        // iterate and hide
+        for (int i = 0; i < interactedPlanets.Count; i++)
+        {
+            var planet = interactedPlanets[i];
+            if (planet != null)
+            {
+                PlanetToolTips.Hide(planet);
+            }
+        }
+
+        // clear the list after hiding
+        interactedPlanets.Clear();
+    }
+
+    public void HandleFinish()
+    {
+        orbitManager.ClearExistingChildren();
+        ClearPlanetTooltips();
+        StartCoroutine(HandleFinishRoutine());
+    }
+
+    private IEnumerator HandleFinishRoutine()
+    {
+        Debug.Log("about to transition");
+
+        bool started = transitionSystem.StartTransition();
+        Debug.Log("StartTransition returned: " + started);
+        Debug.Log("transitioned");
+
+        // Wait until transition is finished
+        yield return new WaitUntil(() => !transitionSystem.isRunning);
+
+        Debug.Log("check build orbits");
+        Debug.Log("building orbits");
+        orbitManager.BuildOrbits();
+        orbitManager.ClearExistingMarker();
+    }
+
+
 }
