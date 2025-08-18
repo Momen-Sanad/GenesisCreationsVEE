@@ -10,27 +10,56 @@ public class OrbitManager : MonoBehaviour
     public GameObject[] markerPrefab; // Marker prefab per orbit
     public float markerScale = 0.2f;
 
+    [Tooltip("Angle (in degrees) along each orbit where the marker will be placed.")]
+    public float markerAngleDegrees = 200f;
+
     [HideInInspector] public Vector3[] targetWorldPositions;
     [HideInInspector] public Marker[] markers; // Runtime references to created markers
 
+    void Start()
+    {
 
-    void Start() => BuildOrbits();
+        BuildOrbits();
+        BuildMarkers();
+    }
 
     /// <summary>
-    /// Creates orbit visuals and markers.
+    /// Creates orbit visuals (LineRenderers) and prepares marker target positions.
+    /// Markers are NOT instantiated here (call BuildMarkers()).
     /// </summary>
     [ContextMenu("Rebuild Orbits")]
     public void BuildOrbits()
     {
-        Debug.Log("Hello");
-        // Checks whether orbit setup data is valid.
-        if (sun == null || orbitRadii == null || orbitRadii.Length == 0) return;
+        if (!ValidateBasicSetup()) return;
 
         PrepareOrbitData();
-        ClearExistingChildren();
+
+        ClearExistingOrbits();
 
         for (var i = 0; i < orbitRadii.Length; i++)
             CreateOrbit(i);
+    }
+
+    /// <summary>
+    /// Creates marker GameObjects (prefab or fallback), sets up collider/rigidbody/Marker,
+    /// and populates markers[] and targetWorldPositions if needed.
+    /// </summary>
+    [ContextMenu("Rebuild Markers")]
+    public void BuildMarkers()
+    {
+        if (!ValidateBasicSetup()) return;
+
+        // Ensure arrays exist and have the correct length
+        PrepareOrbitData();
+
+        // If target positions aren't computed (null or wrong length) compute them now so ForcePlanetIntoOrbit can use them.
+        if (targetWorldPositions == null || targetWorldPositions.Length != orbitRadii.Length)
+            targetWorldPositions = new Vector3[orbitRadii.Length];
+
+        ClearExistingMarker();
+
+        for (var i = 0; i < orbitRadii.Length; i++)
+            CreateMarker(i, orbitRadii[i]);
     }
 
     /// <summary>
@@ -72,45 +101,66 @@ public class OrbitManager : MonoBehaviour
     void PrepareOrbitData()
     {
         circleSegments = Mathf.Max(8, circleSegments);
+
+        if (orbitRadii == null || orbitRadii.Length == 0)
+        {
+            targetWorldPositions = new Vector3[0];
+            markers = new Marker[0];
+            return;
+        }
+
         targetWorldPositions = new Vector3[orbitRadii.Length];
         markers = new Marker[orbitRadii.Length];
     }
 
     /// <summary>
-    /// Removes old orbit and marker objects.
+    /// Removes old orbit and marker objects (keeps compatibility).
     /// </summary>
     public void ClearExistingChildren()
+    {
+        ClearExistingOrbits();
+        ClearExistingMarker();
+    }
+
+    /// <summary>
+    /// Removes old orbit objects only.
+    /// </summary>
+    public void ClearExistingOrbits()
     {
         for (var i = transform.childCount - 1; i >= 0; i--)
         {
             var child = transform.GetChild(i);
-            if (child.name.StartsWith("Orbit_") || child.name.StartsWith("Marker_"))
+
+            if (child.name.StartsWith("Orbit_"))
                 DestroyImmediate(child.gameObject);
         }
     }
 
     /// <summary>
-    /// Removes old marker objects.
+    /// Removes old marker objects only.
     /// </summary>
     public void ClearExistingMarker()
     {
         for (var i = transform.childCount - 1; i >= 0; i--)
         {
             var child = transform.GetChild(i);
+
             if (child.name.StartsWith("Marker_"))
                 DestroyImmediate(child.gameObject);
         }
     }
 
     /// <summary>
-    /// Creates a single orbit ring and its marker.
+    /// Creates a single orbit ring (LineRenderer). Does NOT create markers.
     /// </summary>
     void CreateOrbit(int index)
     {
         var radius = orbitRadii[index];
         var orbitGO = CreateOrbitObject(index, radius);
         DrawOrbitRing(orbitGO, radius);
-        CreateMarker(index, radius);
+
+        // compute the target marker position so GetTargetPosition works even if markers are not instantiated
+        targetWorldPositions[index] = ComputeMarkerPosition(radius, markerAngleDegrees);
     }
 
     /// <summary>
@@ -141,6 +191,8 @@ public class OrbitManager : MonoBehaviour
     void DrawOrbitRing(GameObject orbitGO, float radius)
     {
         var lr = orbitGO.GetComponent<LineRenderer>();
+        if (lr == null) return;
+
         for (var s = 0; s <= circleSegments; s++)
         {
             var t = s / (float)circleSegments;
@@ -150,14 +202,16 @@ public class OrbitManager : MonoBehaviour
         }
     }
 
-
     /// <summary>
-    /// Creates a marker object for the orbit.
+    /// Creates a marker object for the orbit index.
     /// </summary>
     void CreateMarker(int index, float radius)
     {
-        var fixedAngle = 200;
-        var markerPos = sun.position + new Vector3(Mathf.Cos(fixedAngle), 0f, Mathf.Sin(fixedAngle)) * radius;
+        // defensive checks
+        if (index < 0 || index >= orbitRadii.Length) return;
+        if (sun == null) return;
+
+        var markerPos = ComputeMarkerPosition(radius, markerAngleDegrees);
         targetWorldPositions[index] = markerPos;
 
         var prefab = SelectMarkerPrefab(index);
@@ -165,7 +219,6 @@ public class OrbitManager : MonoBehaviour
 
         if (prefab != null)
             markerGO = Instantiate(prefab, markerPos, Quaternion.identity, transform);
-
         else
             markerGO = CreateFallbackMarker(markerPos);
 
@@ -175,6 +228,16 @@ public class OrbitManager : MonoBehaviour
         EnsureMarkerCollider(markerGO);
         EnsureMarkerRigidbody(markerGO);
         ConfigureMarkerComponent(markerGO, index);
+    }
+
+    /// <summary>
+    /// Compute marker position given radius and angle (degrees) on orbit around sun.
+    /// </summary>
+    Vector3 ComputeMarkerPosition(float radius, float angleDegrees)
+    {
+        if (sun == null) return Vector3.zero;
+        var angleRad = angleDegrees * Mathf.Deg2Rad;
+        return sun.position + new Vector3(Mathf.Cos(angleRad), 0f, Mathf.Sin(angleRad)) * radius;
     }
 
     /// <summary>
@@ -195,6 +258,7 @@ public class OrbitManager : MonoBehaviour
     void ForcePlanetIntoOrbit(PlanetPlacement placement)
     {
         if (placement == null || placement.placed) return;
+        if (placement.orbitIndex < 0 || placement.orbitIndex >= orbitRadii.Length) return;
 
         placement.transform.position = GetTargetPosition(placement.orbitIndex);
 
@@ -272,6 +336,31 @@ public class OrbitManager : MonoBehaviour
         var markerComp = markerGO.GetComponent<Marker>() ?? markerGO.AddComponent<Marker>();
         markerComp.orbitIndex = index;
         markerComp.manager = this;
+
+        // ensure markers array is large enough
+        if (markers == null || markers.Length != orbitRadii.Length)
+            markers = new Marker[orbitRadii.Length];
+
         markers[index] = markerComp;
+    }
+
+    /// <summary>
+    /// Basic validation with helpful debug logs.
+    /// </summary>
+    bool ValidateBasicSetup()
+    {
+        if (sun == null)
+        {
+            Debug.LogWarning("[OrbitManager] Sun Transform is not assigned.");
+            return false;
+        }
+
+        if (orbitRadii == null || orbitRadii.Length == 0)
+        {
+            Debug.LogWarning("[OrbitManager] orbitRadii is empty.");
+            return false;
+        }
+
+        return true;
     }
 }

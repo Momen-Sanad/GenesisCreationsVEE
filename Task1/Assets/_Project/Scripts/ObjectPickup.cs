@@ -1,16 +1,11 @@
-using Unity.VisualScripting;
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
-
 [RequireComponent(typeof(LineRenderer))]
 public class ObjectPickup : MonoBehaviour
 {
-    [Header("Quiz Settings")]
-    public QuizActivator quizManager;
-    int placedPlanetsCount = 0;
-
+    [Header("Pickup Settings")]
     public float maxReach = 4f;
     public float holdDistance = 2f;
     public float moveSpeed = 10f;
@@ -18,19 +13,18 @@ public class ObjectPickup : MonoBehaviour
     Camera localCamera;
     Rigidbody heldObject;
     LineRenderer line;
-    [SerializeField]
-    OrbitManager orbitManager;
-
-    public TransitionSystem transitionSystem;
 
     private List<GameObject> interactedPlanets = new List<GameObject>();
 
     public static bool isHoveringObject = false; // For camera control
 
+    // Event to notify when a planet is placed
+    public delegate void PlanetPlacedHandler(GameObject planet);
+    public event PlanetPlacedHandler OnPlanetPlaced;
+
     void Start()
     {
         localCamera = Camera.main;
-        //quizManager.GetComponent<QuizManager>();
         SetupLineRenderer();
     }
 
@@ -70,9 +64,6 @@ public class ObjectPickup : MonoBehaviour
     /// </summary>
     void DrawLaser()
     {
-        //Debug.Log("DrawLaser");
-        //if (localCamera)
-        //    Debug.Log("CameraFOund");
         var offsetOrigin = localCamera.transform.position + Vector3.down * 0.2f;
         var ray = new Ray(offsetOrigin, localCamera.transform.forward);
         line.SetPosition(0, ray.origin);
@@ -113,8 +104,8 @@ public class ObjectPickup : MonoBehaviour
             if (rb != null && rb.useGravity && !rb.isKinematic)
             {
                 var placement = rb.GetComponent<PlanetPlacement>();
-                if (placement != null && placement.placed) 
-                   return;
+                if (placement != null && placement.placed)
+                    return;
 
                 heldObject = rb;
                 heldObject.linearVelocity = Vector3.zero;
@@ -150,15 +141,8 @@ public class ObjectPickup : MonoBehaviour
         var placement = heldObject.GetComponent<PlanetPlacement>();
         if (placement != null && placement.TrySnapToTarget(FindFirstObjectByType<OrbitManager>()))
         {
-            placedPlanetsCount++;
-            Debug.Log("i got placed " + placedPlanetsCount);
-            if (placedPlanetsCount == 8)
-            {
-                HandleFinish();
-            }
-
-            heldObject = null;
-            return;
+            // Notify GameFlowManager that a planet has been placed
+            OnPlanetPlaced?.Invoke(heldObject.gameObject);
         }
 
         heldObject = null;
@@ -181,30 +165,4 @@ public class ObjectPickup : MonoBehaviour
         // clear the list after hiding
         interactedPlanets.Clear();
     }
-
-    public void HandleFinish()
-    {
-        orbitManager.ClearExistingChildren();
-        ClearPlanetTooltips();
-        StartCoroutine(HandleFinishRoutine());
-    }
-
-    private IEnumerator HandleFinishRoutine()
-    {
-        Debug.Log("about to transition");
-
-        bool started = transitionSystem.StartTransition();
-        Debug.Log("StartTransition returned: " + started);
-        Debug.Log("transitioned");
-
-        // Wait until transition is finished
-        yield return new WaitUntil(() => !transitionSystem.isRunning);
-
-        Debug.Log("check build orbits");
-        Debug.Log("building orbits");
-        orbitManager.BuildOrbits();
-        orbitManager.ClearExistingMarker();
-    }
-
-
 }
