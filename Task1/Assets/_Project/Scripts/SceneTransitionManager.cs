@@ -1,4 +1,5 @@
 using UnityEngine;
+//to do in module 1 : make sun go to a ceratin place, then after that coroutine finishes, make all three do their respective transitions
 
 /// <summary>
 /// Scene-level orchestrator: manages camera behavior during scene transitions.
@@ -12,7 +13,9 @@ using UnityEngine;
 public class SceneTransitionManager : MonoBehaviour
 {
     [Header("References")]
+    [SerializeField]
     public TransitionSystem transitionSystem;     // Transition system controlling movement
+    public TransitionSystem TransitionSystem => transitionSystem; // expose
 
     [Header("Camera Controls During Transition")]
     [Tooltip("If true, camera will rotate smoothly to look at the moving transition target.")]
@@ -86,10 +89,27 @@ public class SceneTransitionManager : MonoBehaviour
         return transitionSystem.waypoints[idx];
     }
 
-    void HandleWaypointReached(int index)
+    public void HandleWaypointReached(int index)
     {
-        Debug.Log($"[SceneTransitionManager] Reached waypoint {index + 1}");
+        Debug.Log($"[SceneTransitionManager] {transitionSystem.gameObject.name} reached waypoint {index + 1}");
+
+        // Only care if Sun reaches its first waypoint
+        if (transitionSystem.gameObject.name == "Sun" && index == 0)
+        {
+            GameManager gm = FindFirstObjectByType<GameManager>();
+            if (gm != null)
+            {
+                gm.OnSunFirstWaypointReached();
+            }
+            else
+            {
+                Debug.LogWarning("[SceneTransitionManager] GameManager not found in scene.");
+            }
+        }
     }
+
+
+
 
     void HandleTransitionComplete()
     {

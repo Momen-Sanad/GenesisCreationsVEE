@@ -89,7 +89,7 @@ public class RingDrawer : MonoBehaviour
         var angleStep = 360f / segments;
 
         // World-space center where the ring center sits
-        Vector3 center = targetBody.position + new Vector3(0f, targetHeight - ringRadius, 0f);
+        var center = targetBody.position + new Vector3(0f, targetHeight - ringRadius, 0f);
 
         for (var i = 0; i < segments; i++) {
 
@@ -120,5 +120,16 @@ public class RingDrawer : MonoBehaviour
 
         lineRenderer.startColor = color;
         lineRenderer.endColor = color;
+    }
+
+    /// <summary>
+    /// Clears all line segments from this ring's LineRenderer.
+    /// </summary>
+    public void ClearRing()
+    {
+        if (lineRenderer == null)
+            lineRenderer = GetComponent<LineRenderer>();
+
+        lineRenderer.positionCount = 0;
     }
 }
