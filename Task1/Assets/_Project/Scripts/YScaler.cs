@@ -71,7 +71,7 @@ public class YScaler : MonoBehaviour {
 
     /// <summary>
     /// Scales the selected object's Y axis only.
-    /// </summary>
+    /// </summary>  
     void ScaleCelestialBodyY(Transform clicked, float yDelta) {
 
         var scale = clicked.localScale;

@@ -133,17 +133,17 @@ public class GameManager : MonoBehaviour
         sunRing.SetRingRadius(newSunRingRadius);
     }
 
-    void StartAllTransitions()
-    {
-        if (transitionManagers == null || transitionManagers.Length == 0)
-            return;
+    //void StartAllTransitions()
+    //{
+    //    if (transitionManagers == null || transitionManagers.Length == 0)
+    //        return;
 
-        foreach (var manager in transitionManagers)
-        {
-            if (manager)
-                manager.StartSceneTransition();
-        }
-    }
+    //    foreach (var manager in transitionManagers)
+    //    {
+    //        if (manager)
+    //            manager.StartSceneTransition();
+    //    }
+    //}
 
     bool AllPlanetsScaledCorrectly() =>
         earthRing != null && moonRing != null && sunRing != null &&
