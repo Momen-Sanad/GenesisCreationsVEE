@@ -1,41 +1,60 @@
 using UnityEngine;
 
+/// <summary>
+/// Sun movement constrained to plane z = fixedWorldZ. Rotates around pivot along a fixed radius.
+/// Dragging rotates the Sun around the circumference (no in/out movement).
+/// Sensitivity is controlled via the inspector.
+/// </summary>
 public class ArcMover : MonoBehaviour
 {
     [Header("Objects to move")]
     public Transform Sun;
     public Light directionalLight;
 
+    [Header("Movement Settings")]
+    public float Sensitivity = 1.5f;
+    public float minRadius = 0.5f; // safety minimum radius
+
     Transform pivot;
     Transform selectedObject;
-
-    [Header("Movement Settings")]
-    public float rotationSpeed = 0.2f;
-    public float arcRadius = 10f;
-    public float minElevation = -10f;
-    public float maxElevation = 180f;
-
-    [Header("Day/Night Light Settings")]
-    public float dayIntensity = 1.0f;
-    public float nightIntensity = 0.05f;
-    public Color dayColor = Color.white;
-    public Color nightColor = new Color(0.1f, 0.15f, 0.4f);
-
-    float horizontalDeg;
-    float verticalDeg;
-    float radius;
-
-    Vector3 lastMousePosition;
     bool isDragging;
+    Vector3 lastMousePosition;
 
+    float fixedWorldZ;
+    float radiusXY;
+    float currentAngleDeg;
+
+    /// <summary>
+    /// Initialize pivot, lock world Z and compute initial radius and angle in XY plane.
+    /// </summary>
     void Start()
     {
-        InitPivot();
-        InitSunPosition();
+        pivot = Camera.main ? Camera.main.transform : transform;
+
+        if (!Sun)
+        {
+            enabled = false;
+            return;
+        }
+
+        // Lock Z at Sun's initial world Z
+        fixedWorldZ = Sun.position.z;
+
+        // Compute initial radius/angle in XY plane around pivot projected onto z = fixedWorldZ
+        // Project the pivot to the same Z as the Sun, compute XY offset and set radius/angle.
+        var pivotProjected = new Vector3(pivot.position.x, pivot.position.y, fixedWorldZ);
+        var offsetXY = new Vector3(Sun.position.x - pivotProjected.x, Sun.position.y - pivotProjected.y, 0f);
+        radiusXY = Mathf.Max(minRadius, offsetXY.magnitude);
+
+        currentAngleDeg = Mathf.Atan2(offsetXY.y, offsetXY.x) * Mathf.Rad2Deg;
+
         lastMousePosition = Input.mousePosition;
+        UpdateDirectionalLight();
     }
 
-
+    /// <summary>
+    /// handle mouse press, dragging, and release.
+    /// </summary>
     void Update()
     {
         HandleMouseDown();
@@ -44,30 +63,7 @@ public class ArcMover : MonoBehaviour
     }
 
     /// <summary>
-    /// Initializes pivot (camera or fallback to self).
-    /// </summary>
-    void InitPivot() =>
-        pivot = Camera.main ? Camera.main.transform : transform;
-
-    /// <summary>
-    /// Initializes spherical coordinates of the sun relative to pivot.
-    /// </summary>
-    void InitSunPosition()
-    {
-        var offset = Sun.position - pivot.position;
-        radius = offset.magnitude;
-
-        if (radius <= 0.0001f)
-            radius = arcRadius;
-        else
-            arcRadius = radius;
-
-        horizontalDeg = Mathf.Atan2(offset.x, offset.z) * Mathf.Rad2Deg;
-        verticalDeg = Mathf.Asin(Mathf.Clamp(offset.y / radius, -1f, 1f)) * Mathf.Rad2Deg;
-    }
-
-    /// <summary>
-    /// Handles mouse down: tries to select the sun.
+    /// Detect mouse button down and pick the Sun if clicked.
     /// </summary>
     void HandleMouseDown()
     {
@@ -81,21 +77,116 @@ public class ArcMover : MonoBehaviour
     }
 
     /// <summary>
-    /// Handles mouse dragging while sun is selected.
+    /// When dragging, orchestrates the raycasts and rotation update by calling small helpers.
     /// </summary>
     void HandleDragging()
     {
-        if (!Input.GetMouseButton(0) || !isDragging || selectedObject == null) return;
+        if (!ShouldProcessDrag()) return;
 
-        UpdateAngles();
-        UpdateSunPosition();
+        var cam = Camera.main;
+        if (cam == null) return;
+
+        // Bulky behaviour moved to helpers:
+        // Raycast current & previous mouse rays to the plane
+        // Validate hit points and direction vectors
+        // Compute signed angle delta and apply rotation (keeping radius fixed)
+        if (!TryGetPlanePoint(cam, Input.mousePosition, out var currPoint) ||
+            !TryGetPlanePoint(cam, lastMousePosition, out var prevPoint))
+        {
+            // If either ray missed the plane -> update lastMousePosition and bail out.
+            lastMousePosition = Input.mousePosition;
+            return;
+        }
+
+        var pivotProjected = GetPivotProjected();
+
+        var prevDir2D = new Vector2(prevPoint.x - pivotProjected.x, prevPoint.y - pivotProjected.y);
+        var currDir2D = new Vector2(currPoint.x - pivotProjected.x, currPoint.y - pivotProjected.y);
+
+        if (!AreDirectionsValid(prevDir2D, currDir2D))
+        {
+            lastMousePosition = Input.mousePosition;
+            return;
+        }
+
+        // compute signed angle and apply rotation + updates
+        var signedAngle = ComputeSignedAngle(prevDir2D, currDir2D);
+        ApplyRotationAndUpdate(signedAngle);
+    }
+
+    /// <summary>
+    /// Check whether we should process dragging
+    /// </summary>
+    bool ShouldProcessDrag() => Input.GetMouseButton(0) && isDragging && selectedObject != null;
+
+    /// <summary>
+    /// Raycast the camera's screen point to the plane z = fixedWorldZ. Returns world point on the plane.
+    /// </summary>
+    bool TryGetPlanePoint(Camera cam, Vector3 screenPos, out Vector3 worldPoint)
+    {
+        worldPoint = default;
+        var plane = new Plane(Vector3.forward, new Vector3(0f, 0f, fixedWorldZ));
+        var ray = cam.ScreenPointToRay(screenPos);
+        var hit = plane.Raycast(ray, out float enter);
+        if (!hit)
+        {
+            return false;
+        }
+        worldPoint = ray.GetPoint(enter);
+        return true;
+    }
+
+    /// <summary>
+    /// Project the pivot transform onto the plane z = fixedWorldZ.
+    /// </summary>
+    Vector3 GetPivotProjected() => new Vector3(pivot.position.x, pivot.position.y, fixedWorldZ);
+
+    /// <summary>
+    /// Quick validity check that both 2D direction vectors are non-zero (within tolerance).
+    /// </summary>
+    bool AreDirectionsValid(Vector2 a, Vector2 b) => a.sqrMagnitude >= 1e-6f && b.sqrMagnitude >= 1e-6f;
+
+    /// <summary>
+    /// Compute the signed angle (degrees) between the two 2D directions around Z (XY-plane).
+    /// </summary>
+    float ComputeSignedAngle(Vector2 prevDir2D, Vector2 currDir2D) => Vector2.SignedAngle(prevDir2D.normalized, currDir2D.normalized);
+
+    /// <summary>
+    /// Apply the signed angle with sensitivity to the current angle, compute the new Sun position
+    /// on the fixed radius and update Sun, light and lastMousePosition.
+    /// </summary>
+    void ApplyRotationAndUpdate(float signedAngle)
+    {
+        // apply sensitivity
+        currentAngleDeg += signedAngle * Sensitivity;
+
+        // Keep radius fixed
+        var newPos = ComputeSunPosition(currentAngleDeg);
+        Sun.position = newPos;
+
         UpdateDirectionalLight();
 
+        // update last mouse pos for next frame
         lastMousePosition = Input.mousePosition;
     }
 
     /// <summary>
-    /// Handles mouse up: releases the drag.
+    /// Compute the Sun world position on the circle of radiusXY around the pivot for the given angle in degrees.
+    /// </summary>
+    Vector3 ComputeSunPosition(float angleDeg)
+    {
+        var angRad = angleDeg * Mathf.Deg2Rad;
+        var p = GetPivotProjected();
+        return new Vector3(
+            p.x + radiusXY * Mathf.Cos(angRad),
+            p.y + radiusXY * Mathf.Sin(angRad),
+            fixedWorldZ
+        );
+    }
+
+
+    /// <summary>
+    /// Stop dragging and release selection.
     /// </summary>
     void HandleMouseUp()
     {
@@ -105,36 +196,7 @@ public class ArcMover : MonoBehaviour
     }
 
     /// <summary>
-    /// Updates horizontal and vertical spherical angles based on mouse movement.
-    /// </summary>
-    void UpdateAngles()
-    {
-        var delta = Input.mousePosition - lastMousePosition;
-        horizontalDeg += delta.x * rotationSpeed;
-        verticalDeg -= delta.y * rotationSpeed;
-        verticalDeg = Mathf.Clamp(verticalDeg, minElevation, maxElevation);
-    }
-
-    /// <summary>
-    /// Updates the sun position using spherical coordinates.
-    /// </summary>
-    void UpdateSunPosition()
-    {
-        var elevRad = verticalDeg * Mathf.Deg2Rad;
-        var azimRad = horizontalDeg * Mathf.Deg2Rad;
-        var horizontal = radius * Mathf.Cos(elevRad);
-
-        var newOffset = new Vector3(
-            horizontal * Mathf.Sin(azimRad),
-            radius * Mathf.Sin(elevRad),
-            horizontal * Mathf.Cos(azimRad)
-        );
-
-        Sun.position = pivot.position + newOffset;
-    }
-
-    /// <summary>
-    /// Updates the directional light rotation, intensity, and color based on sun elevation.
+    /// Update the directional light's rotation, intensity and color based on Sun position.
     /// </summary>
     void UpdateDirectionalLight()
     {
@@ -142,23 +204,30 @@ public class ArcMover : MonoBehaviour
 
         var lightDir = (pivot.position - Sun.position).normalized;
         directionalLight.transform.rotation = Quaternion.LookRotation(lightDir);
+        var nightColor = new Color(0.1f, 0.15f, 0.4f);
 
         var t = Mathf.Clamp01(Vector3.Dot((Sun.position - pivot.position).normalized, Vector3.up));
-        directionalLight.intensity = Mathf.Lerp(nightIntensity, dayIntensity, t);
-        directionalLight.color = Color.Lerp(nightColor, dayColor, t);
+        directionalLight.intensity = Mathf.Lerp(0.05f, 1f, t);
+        directionalLight.color = Color.Lerp(nightColor, Color.white, t);
     }
 
     /// <summary>
-    /// Tries to detect if the clicked object is the sun.
+    /// Raycast from the current mouse position and return true if the Sun (or object tagged "Sun") was hit.
     /// </summary>
     bool TryGetClickedObject(out Transform clickedObject)
     {
         clickedObject = null;
-        var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray, out RaycastHit hit) && hit.transform.CompareTag("Sun"))
+        var cam = Camera.main;
+        if (cam == null) return false;
+
+        var ray = cam.ScreenPointToRay(Input.mousePosition);
+        if (Physics.Raycast(ray, out RaycastHit hit, 1000f))
         {
-            clickedObject = hit.transform;
-            return true;
+            if (hit.transform == Sun || hit.transform.CompareTag("Sun"))
+            {
+                clickedObject = hit.transform;
+                return true;
+            }
         }
         return false;
     }
