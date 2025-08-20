@@ -14,6 +14,9 @@ public class ArcMover : MonoBehaviour
     [Header("Movement Settings")]
     public float Sensitivity = 1.5f;
     public float minRadius = 0.5f; // safety minimum radius
+    public float minAngleDeg = 10f;    // <<< ADDED
+    public float maxAngleDeg = 180f;
+
 
     Transform pivot;
     Transform selectedObject;
@@ -35,6 +38,13 @@ public class ArcMover : MonoBehaviour
         {
             enabled = false;
             return;
+        }
+
+        if (minAngleDeg > maxAngleDeg)
+        {
+            var tmp = minAngleDeg;
+            minAngleDeg = maxAngleDeg;
+            maxAngleDeg = tmp;
         }
 
         // Lock Z at Sun's initial world Z
@@ -153,14 +163,17 @@ public class ArcMover : MonoBehaviour
 
     /// <summary>
     /// Apply the signed angle with sensitivity to the current angle, compute the new Sun position
-    /// on the fixed radius and update Sun, light and lastMousePosition.
+    /// on the fixed radius and update Sun, light and lastMousePosition. Clamps angle to min/max.
     /// </summary>
     void ApplyRotationAndUpdate(float signedAngle)
     {
-        // apply sensitivity
+        // apply sensitivity (no key required)
         currentAngleDeg += signedAngle * Sensitivity;
 
-        // Keep radius fixed
+        // <<< CHANGED: clamp angle to allowed range so player can't move Sun out of game bounds
+        currentAngleDeg = Mathf.Clamp(currentAngleDeg, minAngleDeg, maxAngleDeg);
+
+        // Keep radius fixed (do NOT modify radiusXY here)
         var newPos = ComputeSunPosition(currentAngleDeg);
         Sun.position = newPos;
 
@@ -169,6 +182,7 @@ public class ArcMover : MonoBehaviour
         // update last mouse pos for next frame
         lastMousePosition = Input.mousePosition;
     }
+
 
     /// <summary>
     /// Compute the Sun world position on the circle of radiusXY around the pivot for the given angle in degrees.
