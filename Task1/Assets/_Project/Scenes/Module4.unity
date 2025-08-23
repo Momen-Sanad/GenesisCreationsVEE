@@ -323,12 +323,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Sun: {fileID: 2003983331}
   directionalLight: {fileID: 790134149}
-  Sensitivity: 4
+  Sensitivity: 3
   minRadius: 5
-  dayIntensity: 1
-  nightIntensity: 0.05
-  dayColor: {r: 1, g: 1, b: 1, a: 1}
-  nightColor: {r: 0.1, g: 0.15, b: 0.4, a: 1}
+  minAngleDeg: 0
+  maxAngleDeg: 180
 --- !u!4 &167635863
 Transform:
   m_ObjectHideFlags: 0
