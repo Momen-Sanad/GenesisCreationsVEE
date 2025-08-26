@@ -1,4 +1,7 @@
+using TMPro;
 using UnityEngine;
+using System.Collections;
+using UnityEditor.Search;
 
 public class MoonHandler : MonoBehaviour
 {
@@ -66,9 +69,9 @@ public class MoonHandler : MonoBehaviour
             CompleteCycle();
     }
 
-    void SpawnVisualPhase(Transform realMoon, string phaseName)
+    GameObject SpawnVisualPhase(Transform realMoon, string phaseName)
     {
-        if (!moonVisualPrefab || !realMoon) return;
+        if (!moonVisualPrefab || !realMoon) return null;
 
         var clone = Instantiate(moonVisualPrefab, realMoon.position, realMoon.rotation, visualParent);
         clone.name = phaseName;
@@ -79,7 +82,39 @@ public class MoonHandler : MonoBehaviour
 
         var col = clone.GetComponent<Collider>();
         if (col) Destroy(col);
+
+        // Find the Canvas attached to the clone and call PlanetToolTips
+        var canvas = clone.GetComponentInChildren<Canvas>(true);
+        if (canvas)
+        {
+            var toolTips = canvas.GetComponent<PlanetToolTips>();
+            if (toolTips)
+            {
+                // Delay one frame so Start() inside PlanetToolTips finishes first
+                StartCoroutine(ActivateToolTipsNextFrame(toolTips));
+            }
+        }
+
+        // Try to find TMP text
+        var tmpUI = clone.GetComponentInChildren<TextMeshProUGUI>(true);
+        if (tmpUI != null)
+            tmpUI.text = phaseName;
+
+        return clone;
     }
+
+    IEnumerator ActivateToolTipsNextFrame(PlanetToolTips toolTips)
+    {
+        // wait 5 frames i
+        for (int i = 0; i < 5; i++)
+            yield return null;
+
+        Debug.Log("[MoonHandler] activated canvas (after 5 frames)");
+        toolTips.gameObject.SetActive(true);
+        toolTips.Show();
+    }
+
+
 
     void CompleteCycle()
     {

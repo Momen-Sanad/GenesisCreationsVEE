@@ -1,5 +1,6 @@
 using UnityEngine;
-using TMPro; // Make sure you have "using TMPro;"
+using TMPro; 
+
 
 [DisallowMultipleComponent]
 public class MoonOrbitSetup : MonoBehaviour
@@ -29,7 +30,7 @@ public class MoonOrbitSetup : MonoBehaviour
 
     void Start()
     {
-        if(moonGrabber)
+        if (moonGrabber)
             moonGrabber.enabled = false;
 
         if (moonHandler)
@@ -78,6 +79,13 @@ public class MoonOrbitSetup : MonoBehaviour
     void Update()
     {
         if (orbit == null || orbitManager == null || orbitManager.sun == null) return;
+
+        if (toolTips && !toolTips.isActiveAndEnabled)
+        {
+            Debug.Log("hi");
+            toolTips.Show();
+            toolTips.gameObject.SetActive(true);
+        }
 
         // use the actual orbit speed to stay in sync
         float omega;
@@ -135,5 +143,4 @@ public class MoonOrbitSetup : MonoBehaviour
         else if (dayCounterText)
             dayCounterText.text = $"{currentDay} days";
     }
-
 }

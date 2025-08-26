@@ -12,7 +12,7 @@ public class PlanetToolTips : MonoBehaviour
     // Saved once so the canvas keeps its initial world rotation
     public Quaternion initialRotation;
 
-    void Start()
+    void Awake()
     {
         // ensure canvas is world-space
         var canvas = GetComponent<Canvas>();
@@ -50,7 +50,7 @@ public class PlanetToolTips : MonoBehaviour
             if (camera == null) 
                 return;
             
-            Vector3 Direction = tmpText.transform.position - camera.transform.position;
+            var Direction = tmpText.transform.position - camera.transform.position;
 
             if (Direction.sqrMagnitude > 0.000001f)
                tmpText.transform.rotation = Quaternion.LookRotation(Direction, camera.transform.up);
