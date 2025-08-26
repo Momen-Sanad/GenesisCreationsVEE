@@ -4,7 +4,8 @@ using TMPro; // Make sure you have "using TMPro;"
 [DisallowMultipleComponent]
 public class MoonOrbitSetup : MonoBehaviour
 {
-    public MoonHandler moonHandler; 
+    public MoonHandler moonHandler;
+    public MoonGrabber moonGrabber;
 
     public OrbitManager orbitManager;
     public int orbitIndex = 0;
@@ -28,6 +29,9 @@ public class MoonOrbitSetup : MonoBehaviour
 
     void Start()
     {
+        if(moonGrabber)
+            moonGrabber.enabled = false;
+
         if (moonHandler)
             moonHandler.enabled = false;
 
@@ -110,6 +114,8 @@ public class MoonOrbitSetup : MonoBehaviour
             UpdateDayCounter();
 
             toolTips.Hide();
+            
+            moonGrabber.enabled = true;
 
             // null-safe invoke
             moonHandler?.OnFullCycleComplete();
