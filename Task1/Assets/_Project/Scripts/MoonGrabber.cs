@@ -29,7 +29,7 @@ public class MoonGrabber : DistanceGrabber
         // Pixels -> radians: one full screen width == 2pi radians (scaled by sensitivity)
         var radPerPixel = (2f * Mathf.PI / Mathf.Max(1, Screen.width)) * sensitivity;
 
-        var deltaRad = dx * radPerPixel;
+        var deltaRad = -dx * radPerPixel;
         if (forwardOnly && deltaRad < 0f) deltaRad = 0f;
 
         var prevRad = angleRad;

@@ -1,5 +1,6 @@
 using UnityEngine;
-using TMPro; 
+using TMPro;
+using System.Collections;
 
 
 [DisallowMultipleComponent]
@@ -121,18 +122,23 @@ public class MoonOrbitSetup : MonoBehaviour
             currentDay = maxDays;
             UpdateDayCounter();
 
-            toolTips.Hide();
             
-            moonGrabber.enabled = true;
 
-            // null-safe invoke
-            moonHandler?.OnFullCycleComplete();
+            StartCoroutine(DelayedCycleComplete());
 
             // finally stop motion
             orbit.enabled = false;
             enabled = false;
         }
 
+    }
+
+    IEnumerator DelayedCycleComplete()
+    {
+        yield return new WaitForSeconds(3f);
+        moonGrabber.enabled = true;
+        toolTips.Hide();
+        moonHandler?.OnFullCycleComplete();
     }
 
     void UpdateDayCounter()
