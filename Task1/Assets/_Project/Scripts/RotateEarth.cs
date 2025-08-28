@@ -16,10 +16,10 @@ public class RotateEarth : MonoBehaviour
 
     bool firstTime = true;
 
-    public GameObject Snow1;
-    public GameObject Desert1;
-    public GameObject Snow2;
-    public GameObject Desert2;
+    //public GameObject Snow1;
+    //public GameObject Desert1;
+    //public GameObject Snow2;
+    //public GameObject Desert2;
 
     bool usingPair1 = true; // keep track of which pair is active
 
@@ -66,20 +66,20 @@ public class RotateEarth : MonoBehaviour
         Debug.Log("RotateEarth: angle = " + angle);
 
         // Switch pairs once we pass 90 degrees
-        if (angle >= Mathf.Abs(90f) && usingPair1)
-        {
-            Debug.Log("Switching to pair2");
-            DeactivatePair1();
-            ActivatePair2();
-            usingPair1 = false;
-        }
-        else if (angle < Mathf.Abs(90f) && !usingPair1)
-        {
-            Debug.Log("Switching to pair1");
-            ActivatePair1();
-            DeactivatePair2();
-            usingPair1 = true;
-        }
+        //if (angle >= Mathf.Abs(90f) && usingPair1)
+        //{
+        //    Debug.Log("Switching to pair2");
+        //    DeactivatePair1();
+        //    ActivatePair2();
+        //    usingPair1 = false;
+        //}
+        //else if (angle < Mathf.Abs(90f) && !usingPair1)
+        //{
+        //    Debug.Log("Switching to pair1");
+        //    ActivatePair1();
+        //    DeactivatePair2();
+        //    usingPair1 = true;
+        //}
 
         // Hard stop once we reach 180 degrees
         if (angle >= Mathf.Abs(180f))
@@ -97,13 +97,13 @@ public class RotateEarth : MonoBehaviour
         isOrbiting = true;
         isLocked = false;
 
-        if (firstTime)
-        {
-            // Ensure we always start with Pair1 active, Pair2 inactive
-            ActivatePair1();
-            DeactivatePair2();
-            usingPair1 = true;
-        }
+        //if (firstTime)
+        //{
+        //    // Ensure we always start with Pair1 active, Pair2 inactive
+        //    ActivatePair1();
+        //    DeactivatePair2();
+        //    usingPair1 = true;
+        //}
 
         firstTime = false;
 
@@ -164,36 +164,36 @@ public class RotateEarth : MonoBehaviour
     /// <summary>
     /// Activates Pair1 (Snow1 + Desert1).
     /// </summary>
-    public void ActivatePair1()
-    {
-        if (Snow1 != null) Snow1.SetActive(true);
-        if (Desert1 != null) Desert1.SetActive(true);
-    }
+    //public void ActivatePair1()
+    //{
+    //    if (Snow1 != null) Snow1.SetActive(true);
+    //    if (Desert1 != null) Desert1.SetActive(true);
+    //}
 
-    /// <summary>
-    /// Deactivates Pair1 (Snow1 + Desert1).
-    /// </summary>
-    public void DeactivatePair1()
-    {
-        if (Snow1 != null) Snow1.SetActive(false);
-        if (Desert1 != null) Desert1.SetActive(false);
-    }
+    ///// <summary>
+    ///// Deactivates Pair1 (Snow1 + Desert1).
+    ///// </summary>
+    //public void DeactivatePair1()
+    //{
+    //    if (Snow1 != null) Snow1.SetActive(false);
+    //    if (Desert1 != null) Desert1.SetActive(false);
+    //}
 
-    /// <summary>
-    /// Activates Pair2 (Snow2 + Desert2).
-    /// </summary>
-    public void ActivatePair2()
-    {
-        if (Snow2 != null) Snow2.SetActive(true);
-        if (Desert2 != null) Desert2.SetActive(true);
-    }
+    ///// <summary>
+    ///// Activates Pair2 (Snow2 + Desert2).
+    ///// </summary>
+    //public void ActivatePair2()
+    //{
+    //    if (Snow2 != null) Snow2.SetActive(true);
+    //    if (Desert2 != null) Desert2.SetActive(true);
+    //}
 
-    /// <summary>
-    /// Deactivates Pair2 (Snow2 + Desert2).
-    /// </summary>
-    public void DeactivatePair2()
-    {
-        if (Snow2 != null) Snow2.SetActive(false);
-        if (Desert2 != null) Desert2.SetActive(false);
-    }
+    ///// <summary>
+    ///// Deactivates Pair2 (Snow2 + Desert2).
+    ///// </summary>
+    //public void DeactivatePair2()
+    //{
+    //    if (Snow2 != null) Snow2.SetActive(false);
+    //    if (Desert2 != null) Desert2.SetActive(false);
+    //}
 }
