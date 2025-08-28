@@ -137,7 +137,7 @@ public class EarthOrbitRotator : DistanceGrabber
 
         // Clamp between 0 and 360 so we can detect full orbit
         if (accumulatedAngleDegrees < 0f) accumulatedAngleDegrees = 0f;
-        if (accumulatedAngleDegrees > 360f) accumulatedAngleDegrees = 360f;
+        if (accumulatedAngleDegrees > 180f) accumulatedAngleDegrees = 180f;
 
         // compute the absolute angle in radians using the constant baseAngleRad
         var totalAngleRad = baseAngleRad + accumulatedAngleDegrees * Mathf.Deg2Rad;
@@ -158,7 +158,7 @@ public class EarthOrbitRotator : DistanceGrabber
         }
 
         // check completion
-        if (accumulatedAngleDegrees >= 360f || dayCounter >= totalDays)
+        if (accumulatedAngleDegrees >= 180f || dayCounter >= totalDays)
         {
             // snap to exact starting position (using baseAngleRad) to avoid tiny drift
             Vector3 startPosition = sun.position + 
@@ -180,5 +180,9 @@ public class EarthOrbitRotator : DistanceGrabber
     public int GetCurrentDay()
     {
         return dayCounter;
+    }
+    public float GetCurrentAngle()
+    {
+        return accumulatedAngleDegrees;
     }
 }
